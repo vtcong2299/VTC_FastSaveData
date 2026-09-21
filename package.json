@@ -1,6 +1,6 @@
 {
   "name": "com.vtcong.fastsave",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "VTC Fast Save",
   "description": "Save game nhi phan nhanh, gon, ho tro da dang kieu du lieu va class tu dinh nghia.",
   "unity": "2021.3",
@@ -13,5 +13,12 @@
     "url": "https://github.com/vtcong2299/VTC_FastSaveData.git"
   },
   "keywords": ["save", "serialization", "binary", "persistence", "unity"],
-  "dependencies": {}
+  "dependencies": {},
+  "samples": [
+    {
+      "displayName": "Example",
+      "description": "Scene test voi ScriptableObject khai bao 44 field phu moi kieu du lieu, kem nut random / save / load / verify / benchmark.",
+      "path": "Samples~/Example"
+    }
+  ]
 }

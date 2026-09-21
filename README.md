@@ -141,15 +141,17 @@ Dữ liệu thật sự quan trọng (tiền tệ trả phí, xếp hạng) vẫ
 `Window > Fast Save Data`:
 
 - **Inspector** — xem key, kiểu, giá trị, dung lượng; xoá từng key.
-- **Open Example Scene** — mở scene test.
+- **Open Example Scene** — mở scene test (chỉ có sau khi import sample).
 - **Open Save Folder** — mở thư mục `persistentDataPath`.
 - **Clear Data** — xoá toàn bộ save.
 
 ## Example
 
-Mở `Window > Fast Save Data > Open Example Scene` (hoặc
-`Example/Scenes/FastSaveExample.unity`). Scene có sẵn GameObject **FastSave Example**
-đã trỏ tới asset `Example/Data/FastSaveExampleData.asset`.
+Import sample **Example** qua Package Manager (xem mục cuối), rồi mở
+`Window ▸ Fast Save Data ▸ Open Example Scene`. Scene có sẵn GameObject
+**FastSave Example**.
+
+Menu đó nằm trong sample nên chỉ xuất hiện sau khi import.
 
 ### Schema nằm trong ScriptableObject
 
@@ -219,3 +221,14 @@ File         114 KB  (22.9 byte/entry)
 ```
 
 `List<int>` 1000 giá trị nhỏ: **1539 byte** (format cũ cần hơn 5005 byte).
+
+## Mở scene sample
+
+Sample **không** được import sẵn. Vào **Window ▸ Package Manager ▸ VTC Fast Save ▸ Samples ▸ Import**.
+
+Unity copy sample vào `Assets/Samples/VTC Fast Save/<version>/Example/`, từ đó mở scene bình thường.
+
+> **Vì sao phải import?** Package cài qua git URL nằm trong `Library/PackageCache` và ở
+> chế độ read-only. Unity **cấm mở scene nằm trong package read-only** — báo
+> *"It is not allowed to open a scene in a read-only package"*. Cơ chế Samples của UPM
+> sinh ra chính để giải quyết việc này: nó copy sample sang `Assets/` nơi file ghi được.
