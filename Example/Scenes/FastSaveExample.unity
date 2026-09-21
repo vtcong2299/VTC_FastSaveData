@@ -300,7 +300,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe34e94b955a78f49a1ce6b2cde2e5cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  data: {fileID: 11400000, guid: 6b4d2e8a71c94f3d9a05e1cb37f8d240, type: 2}
   benchmarkEntryCount: 5000
   showRuntimeGui: 1
 --- !u!1660057539 &9223372036854775807
