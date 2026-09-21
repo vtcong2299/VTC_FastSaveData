@@ -1,0 +1,19 @@
+{
+    "name": "vtcong.fastsave.samples.editor",
+    "rootNamespace": "Vtcong.Core.Example",
+    "references": [
+        "vtcong.fastsave.runtime",
+        "vtcong.fastsave.samples"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

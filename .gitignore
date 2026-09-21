@@ -1,0 +1,51 @@
+# ─────────────────────────────────────────────────────────────
+# QUAN TRỌNG: KHÔNG BAO GIỜ ignore file *.meta
+# Unity cần .meta để giữ GUID; thiếu nó là đứt mọi tham chiếu.
+# ─────────────────────────────────────────────────────────────
+
+# Thư mục sinh ra khi package nằm trong một project Unity để dev
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Solution / project sinh tự động
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb.meta
+*.opendb
+*.VC.db
+
+# IDE
+.vs/
+.vscode/
+.idea/
+.consulo/
+
+# Hệ điều hành
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Crashlytics / build artifact
+crashlytics-build.properties
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage

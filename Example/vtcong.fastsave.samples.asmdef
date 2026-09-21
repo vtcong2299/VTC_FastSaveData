@@ -1,0 +1,16 @@
+{
+    "name": "vtcong.fastsave.samples",
+    "rootNamespace": "Vtcong.Core.Example",
+    "references": [
+        "vtcong.fastsave.runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
