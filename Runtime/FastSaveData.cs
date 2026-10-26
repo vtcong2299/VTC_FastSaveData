@@ -23,8 +23,8 @@ namespace Vtcong.Core
     /// </summary>
     public static class FastSaveData
     {
-        // ĐỔI CHUỖI NÀY TRƯỚC KHI BUILD.
-        private const string Secret = "FastSave_8F29Kx7Qm2P6";
+        // secret dùng chung của bản <= 1.1.0, giữ vĩnh viễn để đọc được save cũ
+        private const string LegacySecret = "FastSave_8F29Kx7Qm2P6";
         private const bool Backup = true;
 
         private static readonly object Gate = new();
@@ -37,6 +37,12 @@ namespace Vtcong.Core
         private static bool _dirty;
         private static int _pendingWrites;
         private static int _mainThreadId;
+        private static string _secret;
+        private static FastSaveLoadStatus _loadStatus;
+
+        // tăng trong Gate mỗi lần Pack; chỉ ghi xuống đĩa bản mới hơn bản đã ghi (đọc/ghi trong WriteGate)
+        private static long _packedVersion;
+        private static long _writtenVersion;
 
         /// <summary>Chế độ bảo vệ file. Đổi trước lần Save đầu tiên.</summary>
         public static FastSaveEncryption Encryption { get; set; } = FastSaveEncryption.Obfuscate;
@@ -88,6 +94,28 @@ namespace Vtcong.Core
         /// </summary>
         public static bool HasPendingWrites => Volatile.Read(ref _pendingWrites) > 0;
 
+        /// <summary>
+        /// Kết quả lần đọc file gần nhất. Kiểm tra trong <see cref="OnAfterLoad"/> để báo người chơi
+        /// hoặc kéo cloud save về khi là <see cref="FastSaveLoadStatus.Corrupted"/>.
+        /// </summary>
+        public static FastSaveLoadStatus LoadStatus
+        {
+            get
+            {
+                lock (Gate)
+                {
+                    Ensure();
+                    return _loadStatus;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Secret của project lấy từ <see cref="FastSaveSettings"/>. Chưa tạo settings thì dùng
+        /// secret dùng chung của package như bản cũ.
+        /// </summary>
+        private static string Secret => _secret ??= ResolveSecret();
+
         public static event Action OnBeforeSave;
 
         /// <summary>
@@ -111,14 +139,26 @@ namespace Vtcong.Core
         private static void Ensure()
         {
             if (_initialized) return;
-            _entries = FastSaveDataStorage.Load(Secret);
+            _entries = FastSaveDataStorage.Load(Secret, LegacySecret, out _loadStatus);
             _referenceKeys = new HashSet<string>(StringComparer.Ordinal);
             foreach (var pair in _entries)
                 if (IsMutable(pair.Value))
                     _referenceKeys.Add(pair.Key);
             _initialized = true;
-            _dirty = false;
+            // file cũ hoặc khôi phục từ backup: ghi lại sớm bằng secret hiện tại
+            _dirty = _loadStatus is FastSaveLoadStatus.MigratedLegacy or FastSaveLoadStatus.RestoredFromBackup;
             OnAfterLoad?.Invoke();
+        }
+
+        private static string ResolveSecret()
+        {
+            var settings = Resources.Load<FastSaveSettings>(FastSaveSettings.ResourcePath);
+            if (settings != null && !string.IsNullOrWhiteSpace(settings.Secret)) return settings.Secret;
+#if UNITY_EDITOR
+            Debug.LogWarning("[FastSaveData] Chưa có FastSaveSettings, đang dùng secret dùng chung của package. " +
+                             "Tạo secret riêng bằng Window > Fast Save Data > Create Settings.");
+#endif
+            return LegacySecret;
         }
 
         private static bool IsMutable(object value) => value != null && !(value is ValueType) && !(value is string);
@@ -326,6 +366,7 @@ namespace Vtcong.Core
         public static void Save(bool force = false)
         {
             ArraySegment<byte> packed;
+            long version;
 
             lock (Gate)
             {
@@ -333,14 +374,13 @@ namespace Vtcong.Core
                 if (!force && !_dirty) return;
                 OnBeforeSave?.Invoke();
                 packed = FastSaveDataStorage.Pack(_entries, Secret, Encryption);
+                version = ++_packedVersion;
                 _dirty = false;
             }
 
             try
             {
-                // Chờ luôn mọi SaveAsync đang bay để không có hai luồng cùng ghi.
-                lock (WriteGate) FastSaveDataStorage.WritePacked(packed, Backup);
-                InvokeOnMainThread(OnAfterSave);
+                if (WriteIfNewest(packed, version)) InvokeOnMainThread(OnAfterSave);
             }
             catch (Exception e)
             {
@@ -358,6 +398,7 @@ namespace Vtcong.Core
         public static Task SaveAsync(bool force = false)
         {
             ArraySegment<byte> packed;
+            long version;
 
             lock (Gate)
             {
@@ -365,6 +406,7 @@ namespace Vtcong.Core
                 if (!force && !_dirty) return Task.CompletedTask;
                 OnBeforeSave?.Invoke();
                 packed = FastSaveDataStorage.Pack(_entries, Secret, Encryption);
+                version = ++_packedVersion;
                 _dirty = false;
             }
 
@@ -381,8 +423,7 @@ namespace Vtcong.Core
             {
                 try
                 {
-                    lock (WriteGate) FastSaveDataStorage.WritePacked(packed, Backup);
-                    InvokeOnMainThread(OnAfterSave);
+                    if (WriteIfNewest(packed, version)) InvokeOnMainThread(OnAfterSave);
                 }
                 catch (Exception e)
                 {
@@ -394,6 +435,21 @@ namespace Vtcong.Core
                     Interlocked.Decrement(ref _pendingWrites);
                 }
             });
+        }
+
+        /// <summary>
+        /// Task trong thread pool không chạy theo thứ tự gọi, nên bản pack cũ có thể tới WriteGate
+        /// sau bản mới. Bỏ qua nó để đĩa luôn giữ bản mới nhất.
+        /// </summary>
+        private static bool WriteIfNewest(ArraySegment<byte> packed, long version)
+        {
+            lock (WriteGate)
+            {
+                if (version <= _writtenVersion) return false;
+                FastSaveDataStorage.WritePacked(packed, Backup);
+                _writtenVersion = version;
+                return true;
+            }
         }
 
         /// <summary>
@@ -424,10 +480,14 @@ namespace Vtcong.Core
         {
             lock (Gate)
             {
-                _initialized = false;
-                _entries = null;
-                _referenceKeys = null;
-                Ensure();
+                // giữ WriteGate để không đọc trúng lúc một SaveAsync đang ghi dở
+                lock (WriteGate)
+                {
+                    _initialized = false;
+                    _entries = null;
+                    _referenceKeys = null;
+                    Ensure();
+                }
             }
         }
 
@@ -435,7 +495,14 @@ namespace Vtcong.Core
         {
             lock (Gate)
             {
-                lock (WriteGate) FastSaveDataStorage.Clear();
+                lock (WriteGate)
+                {
+                    FastSaveDataStorage.Clear();
+                    // mọi SaveAsync đang chờ thành bản cũ, không ghi lại dữ liệu vừa xoá
+                    _writtenVersion = ++_packedVersion;
+                }
+
+                _loadStatus = FastSaveLoadStatus.NoFile;
                 _entries = new Dictionary<string, object>(StringComparer.Ordinal);
                 _referenceKeys = new HashSet<string>(StringComparer.Ordinal);
                 _initialized = true;
@@ -529,10 +596,15 @@ namespace Vtcong.Core
             _initialized = false;
             _entries = null;
             _referenceKeys = null;
+            _secret = null;
             _dirty = false;
             _pendingWrites = 0;
             lock (MainThreadQueue) MainThreadQueue.Clear();
 #endif
         }
+
+        // Resources.Load chỉ chạy trên main thread, đọc sẵn để Get/Set đầu tiên từ thread khác vẫn an toàn
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void PrepareSecret() => _ = Secret;
     }
 }

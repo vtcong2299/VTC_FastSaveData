@@ -155,33 +155,92 @@ namespace Vtcong.Core
         // LOAD
         // =========================================================
 
-        public static Dictionary<string, object> Load(string secret)
-        {
-            if (TryLoad(FilePath, secret, out var entries)) return entries;
+        public static Dictionary<string, object> Load(string secret) => Load(secret, null, out _);
 
-            if (File.Exists(BackupPath))
+        /// <summary>
+        /// Đọc file chính, hỏng thì đọc backup. Mỗi file thử <paramref name="secret"/> trước rồi tới
+        /// <paramref name="legacySecret"/>. Không bao giờ để mất file hỏng: trước khi trả về dữ liệu
+        /// trống, bản sao được giữ lại ở <c>.corrupt</c>.
+        /// </summary>
+        public static Dictionary<string, object> Load(string secret, string legacySecret,
+            out FastSaveLoadStatus status)
+        {
+            var filePath = FilePath;
+            var backupPath = BackupPath;
+            var hasFile = File.Exists(filePath);
+            var hasBackup = File.Exists(backupPath);
+
+            if (!hasFile && !hasBackup)
             {
-                Debug.LogWarning("[FastSaveData] File chính hỏng, đang khôi phục từ backup.");
-                if (TryLoad(BackupPath, secret, out entries)) return entries;
+                status = FastSaveLoadStatus.NoFile;
+                return new Dictionary<string, object>(StringComparer.Ordinal);
             }
 
+            if (hasFile && TryLoad(filePath, secret, legacySecret, out var entries, out var legacy))
+            {
+                status = legacy ? FastSaveLoadStatus.MigratedLegacy : FastSaveLoadStatus.Loaded;
+                return entries;
+            }
+
+            if (hasBackup && TryLoad(backupPath, secret, legacySecret, out entries, out _))
+            {
+                Debug.LogWarning("[FastSaveData] File chính hỏng, đã khôi phục từ backup.");
+                // ghi đè file chính ngay, nếu không lần Save sau sẽ đẩy file hỏng vào .bak và chỉ còn một bản tốt
+                if (hasFile) Quarantine(filePath);
+                TryCopy(backupPath, filePath);
+                status = FastSaveLoadStatus.RestoredFromBackup;
+                return entries;
+            }
+
+            if (hasFile) Quarantine(filePath);
+            if (hasBackup) Quarantine(backupPath);
+            Debug.LogError("[FastSaveData] File save và backup đều hỏng, bắt đầu với dữ liệu trống. " +
+                           "Bản sao được giữ ở file .corrupt cạnh file save.");
+            status = FastSaveLoadStatus.Corrupted;
             return new Dictionary<string, object>(StringComparer.Ordinal);
         }
 
-        private static bool TryLoad(string path, string secret, out Dictionary<string, object> entries)
+        private static bool TryLoad(string path, string secret, string legacySecret,
+            out Dictionary<string, object> entries, out bool legacy)
         {
             entries = null;
-            if (!File.Exists(path)) return false;
+            legacy = false;
 
             try
             {
-                entries = FastSaveDataSerializer.Deserialize(FastSaveDataCrypto.Unprotect(File.ReadAllBytes(path), secret));
+                var raw = File.ReadAllBytes(path);
+                byte[] payload;
+                try
+                {
+                    payload = FastSaveDataCrypto.Unprotect(raw, secret);
+                }
+                catch (Exception) when (!string.IsNullOrEmpty(legacySecret) && legacySecret != secret)
+                {
+                    payload = FastSaveDataCrypto.Unprotect(raw, legacySecret);
+                    legacy = true;
+                }
+
+                entries = FastSaveDataSerializer.Deserialize(payload);
                 return true;
             }
             catch (Exception e)
             {
                 Debug.LogError($"[FastSaveData] Không đọc được '{path}': {e.Message}");
                 return false;
+            }
+        }
+
+        private static void Quarantine(string path) => TryCopy(path, path + ".corrupt");
+
+        private static void TryCopy(string from, string to)
+        {
+            try
+            {
+                File.Copy(from, to, true);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[FastSaveData] Không copy được '{from}' sang '{to}': {e.Message}");
             }
         }
 

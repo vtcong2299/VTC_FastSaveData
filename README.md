@@ -39,8 +39,14 @@ Không cần gọi `Save()` khi thoát game: package tự lưu ở `OnApplicatio
 
 ## Trước khi build
 
-Đổi hằng `Secret` trong `Runtime/FastSaveData.cs`. Package sẽ ném exception nếu vẫn để
-secret mặc định.
+Tạo secret riêng cho game: **Window ▸ Fast Save Data ▸ Create Settings**. Lệnh này tạo
+`Assets/Resources/FastSaveSettings.asset` với một secret ngẫu nhiên.
+
+- Chưa có settings thì package dùng secret dùng chung như bản 1.1.0 trở về trước, và
+  Editor hiện cảnh báo. Repo package là public nên secret đó ai cũng biết.
+- Save đã mã hoá bằng secret dùng chung vẫn đọc được, và được mã hoá lại bằng secret
+  của game ở lần Save sau (`LoadStatus == MigratedLegacy`).
+- **Không đổi secret sau khi đã phát hành.** Save của người chơi sẽ không đọc được nữa.
 
 ## Kiểu hỗ trợ
 
@@ -108,6 +114,7 @@ khi có entry reference type nên trường hợp này vẫn an toàn.
 | `WaitForPendingWrites(ms)` | chờ mọi `SaveAsync` đang bay ghi xong |
 | `HasPendingWrites` | còn `SaveAsync` chưa ghi xong hay không |
 | `Reload()` | đọc lại từ đĩa |
+| `LoadStatus` | kết quả lần đọc file gần nhất, xem mục File hỏng |
 | `HasKey` `DeleteKey` `ClearData` `GetAllKeys` `GetValueType` `MarkDirty` | quản lý |
 | `Encryption` `AutoSave` `AutoSaveInterval` | cấu hình |
 | `OnBeforeSave` `OnAfterSave` `OnAfterLoad` | sự kiện |
@@ -134,6 +141,27 @@ Bị kill giữa lúc `SaveAsync` đang ghi thì **không hỏng file**: file t�
 `File.Replace` nên file chính vẫn là bản cũ nguyên vẹn. Và auto-save lúc thoát game
 kiểm tra `HasPendingWrites` nên sẽ ghi lại đồng bộ, không bỏ sót lần lưu cuối.
 
+Mỗi lần pack được đánh số. Trên đĩa luôn là bản mới nhất: một `SaveAsync` cũ tới lượt
+ghi sau một lần `Save()` hoặc `SaveAsync()` mới hơn thì bị bỏ qua, và `ClearData()`
+huỷ mọi `SaveAsync` đang chờ.
+
+## File hỏng
+
+`FastSaveData.LoadStatus` cho biết lần đọc file gần nhất ra sao. Kiểm tra trong
+`OnAfterLoad`:
+
+| Giá trị | Nghĩa |
+|---|---|
+| `NoFile` | chưa có file save |
+| `Loaded` | đọc file chính thành công |
+| `MigratedLegacy` | file dùng secret dùng chung cũ, lần Save sau mã hoá lại |
+| `RestoredFromBackup` | file chính hỏng, đã khôi phục từ `.bak` và ghi lại file chính |
+| `Corrupted` | file chính và `.bak` đều hỏng, dữ liệu bắt đầu trống |
+
+Package không bao giờ xoá file hỏng: trước khi ghi đè, bản sao được giữ ở
+`FastSaveData.dat.corrupt` (và `.bak.corrupt`) cạnh file save. Khi gặp `Corrupted`,
+game có thể báo người chơi, kéo cloud save về, hoặc gửi file `.corrupt` để cứu dữ liệu.
+
 ## Mã hoá
 
 `FastSaveData.Encryption`:
@@ -153,6 +181,7 @@ Dữ liệu thật sự quan trọng (tiền tệ trả phí, xếp hạng) vẫ
 - **Open Example Scene** — mở scene test (chỉ có sau khi import sample).
 - **Open Save Folder** — mở thư mục `persistentDataPath`.
 - **Clear Data** — xoá toàn bộ save.
+- **Create Settings** — tạo `FastSaveSettings` với secret ngẫu nhiên, hoặc chọn asset đã có.
 
 ## Example
 

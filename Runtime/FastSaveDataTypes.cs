@@ -18,6 +18,27 @@ namespace Vtcong.Core
     }
 
     /// <summary>
+    /// Kết quả lần đọc file save gần nhất (<see cref="FastSaveData.LoadStatus"/>).
+    /// </summary>
+    public enum FastSaveLoadStatus : byte
+    {
+        /// <summary>Chưa có file save, bắt đầu với dữ liệu trống.</summary>
+        NoFile = 0,
+
+        /// <summary>Đọc file chính thành công.</summary>
+        Loaded = 1,
+
+        /// <summary>File được mã hoá bằng secret dùng chung cũ, lần Save sau sẽ mã hoá lại bằng secret của project.</summary>
+        MigratedLegacy = 2,
+
+        /// <summary>File chính hỏng, đã khôi phục từ file .bak.</summary>
+        RestoredFromBackup = 3,
+
+        /// <summary>Cả file chính lẫn backup đều hỏng. Bản sao được giữ ở file .corrupt, dữ liệu bắt đầu trống.</summary>
+        Corrupted = 4
+    }
+
+    /// <summary>
     /// Bỏ qua field này khi FastSave tự động serialize class bằng reflection.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]

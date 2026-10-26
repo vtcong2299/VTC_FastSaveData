@@ -4,6 +4,22 @@ Tất cả thay đổi đáng chú ý của VTC Fast Save được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [1.2.0] - 2026-10-26
+
+### Added
+- `FastSaveSettings` trong `Resources` giữ secret riêng của từng game, tạo bằng
+  `Window > Fast Save Data > Create Settings`. Save mã hoá bằng secret dùng chung cũ vẫn đọc
+  được và được mã hoá lại ở lần Save sau.
+- `FastSaveData.LoadStatus` cho biết lần đọc file gần nhất: `NoFile`, `Loaded`,
+  `MigratedLegacy`, `RestoredFromBackup` hoặc `Corrupted`.
+
+### Fixed
+- Một `SaveAsync` cũ không còn ghi đè bản mới hơn của `Save()` hay `SaveAsync()` gọi sau nó.
+- `ClearData()` khi còn `SaveAsync` đang chờ không còn để dữ liệu cũ bị ghi lại.
+- `Reload()` không đọc file khi một `SaveAsync` đang ghi dở.
+- File save và backup đều hỏng thì bản sao được giữ ở `.corrupt` thay vì bị ghi đè âm thầm.
+- Khôi phục từ backup thì file chính được ghi lại ngay, không còn chỉ một bản tốt.
+
 ## [1.1.0] - 2026-10-26
 
 ### Added

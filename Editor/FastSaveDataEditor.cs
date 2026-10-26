@@ -30,6 +30,36 @@ namespace Vtcong.Core
             Debug.Log("[FastSaveData] Đã xoá save data.");
             FastSaveDataWindow.RepaintIfOpen();
         }
+
+        [MenuItem("Window/Fast Save Data/Create Settings", false, 40)]
+        private static void CreateSettings()
+        {
+            var settings = Resources.Load<FastSaveSettings>(FastSaveSettings.ResourcePath);
+            if (settings == null)
+            {
+                const string folder = "Assets/Resources";
+                if (!AssetDatabase.IsValidFolder(folder)) AssetDatabase.CreateFolder("Assets", "Resources");
+
+                settings = ScriptableObject.CreateInstance<FastSaveSettings>();
+                AssetDatabase.CreateAsset(settings, $"{folder}/{FastSaveSettings.ResourcePath}.asset");
+
+                var serialized = new SerializedObject(settings);
+                serialized.FindProperty("secret").stringValue = GenerateSecret();
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                AssetDatabase.SaveAssets();
+                Debug.Log("[FastSaveData] Đã tạo FastSaveSettings với secret ngẫu nhiên. Save cũ vẫn đọc được và sẽ được mã hoá lại ở lần Save sau.");
+            }
+
+            Selection.activeObject = settings;
+            EditorGUIUtility.PingObject(settings);
+        }
+
+        private static string GenerateSecret()
+        {
+            var bytes = new byte[24];
+            using (var random = System.Security.Cryptography.RandomNumberGenerator.Create()) random.GetBytes(bytes);
+            return Convert.ToBase64String(bytes);
+        }
     }
 
     /// <summary>
@@ -79,6 +109,7 @@ namespace Vtcong.Core
             EditorGUILayout.LabelField("File", FastSaveData.FilePath, EditorStyles.miniLabel);
             EditorGUILayout.LabelField("Dung lượng", $"{FastSaveData.FileSize:N0} bytes   |   {FastSaveData.Count} entry" +
                                                      (FastSaveData.IsDirty ? "   |   chưa lưu" : string.Empty));
+            EditorGUILayout.LabelField("Lần load", FastSaveData.LoadStatus.ToString());
             EditorGUILayout.Space(4);
         }
 
