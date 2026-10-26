@@ -14,7 +14,7 @@ namespace Vtcong.Core.Example
     /// </summary>
     public static class FastSaveExampleSceneMenu
     {
-        private const string SceneGuid = "3c7a1f5e9b2d4a1e8f6c0d5b7e93a241";
+        private const string SceneGuid = "a3b8a492ebe644a9ad6956141c39b2e4";
         private const string SceneName = "FastSaveExample";
 
         [MenuItem("Window/Fast Save Data/Open Example Scene", false, 1)]

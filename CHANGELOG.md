@@ -4,6 +4,13 @@ Tất cả thay đổi đáng chú ý của VTC Fast Save được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [1.0.2] - 2026-10-26
+
+### Fixed
+- Tạo GUID mới cho toàn bộ file `.meta` của package.
+  GUID cũ trùng với bản code gốc, nên ở project đã có sẵn bản đó Unity bỏ qua asset của package
+  ("conflicts with ... The asset will be ignored") và các class trong package bị mất.
+
 ## [1.0.1] - 2026-09-21
 
 ### Fixed
