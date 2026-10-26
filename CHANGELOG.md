@@ -4,6 +4,12 @@ Tất cả thay đổi đáng chú ý của VTC Fast Save được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [1.1.0] - 2026-10-26
+
+### Added
+- Tự kiểm tra cập nhật mỗi lần mở Editor cho mọi package `com.vtcong.*` cài qua git URL.
+  Bản thấp hơn 1.1.0 được tự nâng lên 1.1.0; bản mới hơn thì hỏi người dùng trước khi cập nhật.
+
 ## [1.0.2] - 2026-10-26
 
 ### Fixed
