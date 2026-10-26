@@ -20,7 +20,8 @@ namespace Vtcong.Bootstrap
         private const string SkipKeyPrefix = "vtcong.updater.skip.";
         private const string Title = "VTC Packages";
 
-        // bản thấp hơn baseline được tự nâng lên đúng baseline; bản mới hơn baseline chỉ hỏi người dùng
+        // bản thấp hơn baseline được tự nâng lên bản mới nhất; bản từ baseline trở lên chỉ hỏi người dùng
+        // luôn cài bằng git URL không gắn tag: gắn tag thì nút Update của Package Manager chỉ tải lại đúng tag đó
         private static readonly (string Id, string Repo, string Baseline)[] Packages =
         {
             ("com.vtcong.singleton", "VTC_Singleton", "1.1.0"),
@@ -63,11 +64,12 @@ namespace Vtcong.Bootstrap
 
                 if (installed < Version.Parse(package.Baseline))
                 {
-                    lift.Add($"{GitUrl(package.Repo)}#v{package.Baseline}");
+                    lift.Add(GitUrl(package.Repo));
                     continue;
                 }
 
-                var request = UnityWebRequest.Get($"https://raw.githubusercontent.com/{Owner}/{package.Repo}/HEAD/package.json");
+                // query string để không nhận bản package.json cũ còn nằm trong cache của raw.githubusercontent
+                var request = UnityWebRequest.Get($"https://raw.githubusercontent.com/{Owner}/{package.Repo}/HEAD/package.json?t={DateTime.UtcNow.Ticks}");
                 request.timeout = 10;
                 request.SendWebRequest();
                 Checks.Add((package.Id, package.Repo, installed, request));
@@ -77,7 +79,7 @@ namespace Vtcong.Bootstrap
             {
                 foreach (var check in Checks) check.Request.Dispose();
                 Checks.Clear();
-                Debug.Log($"[{Title}] Nâng lên bản tối thiểu: {string.Join(", ", lift)}");
+                Debug.Log($"[{Title}] Bản thấp hơn bản tối thiểu, nâng lên bản mới nhất:{string.Join(", ", lift)}");
                 Client.AddAndRemove(lift.ToArray());
                 return;
             }

@@ -16,8 +16,11 @@ Không phụ thuộc package nào khác. Odin là tuỳ chọn — chỉ ảnh h
 
 Mỗi lần mở Unity Editor, package kiểm tra tất cả các package `com.vtcong.*` đang cài qua git URL:
 
-- Bản thấp hơn 1.1.0 được tự nâng lên `#v1.1.0`, không cần thao tác.
+- Bản thấp hơn 1.1.0 được tự nâng lên bản mới nhất, không cần thao tác.
 - Có bản mới hơn trên GitHub thì hiện hộp thoại: **Cập nhật**, **Để sau** (hỏi lại lần mở sau) hoặc **Bỏ qua bản này**.
+- Cài bằng git URL **không gắn tag** (`...git`, không phải `...git#v1.1.0`). URL có tag thì nút
+  **Update** của Package Manager chỉ tải lại đúng tag đó. Project đang ghim tag sẽ được bỏ tag khi
+  bấm **Cập nhật** trong hộp thoại trên.
 
 Không chạy trong batchmode (CI). Mất mạng thì bỏ qua, không báo lỗi.
 

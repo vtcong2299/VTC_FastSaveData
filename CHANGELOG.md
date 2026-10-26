@@ -4,6 +4,13 @@ Tất cả thay đổi đáng chú ý của VTC Fast Save được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [1.2.1] - 2026-10-26
+
+### Fixed
+- Bộ tự cập nhật nâng bản cũ bằng git URL không gắn tag. Trước đó URL bị ghim `#v1.1.0` nên nút
+  Update của Package Manager chỉ tải lại đúng bản 1.1.0.
+- Bộ tự cập nhật không còn nhận nhầm `package.json` cũ trong cache của GitHub ngay sau khi phát hành.
+
 ## [1.2.0] - 2026-10-26
 
 ### Added
