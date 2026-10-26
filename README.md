@@ -145,6 +145,61 @@ Mỗi lần pack được đánh số. Trên đĩa luôn là bản mới nhất:
 ghi sau một lần `Save()` hoặc `SaveAsync()` mới hơn thì bị bỏ qua, và `ClearData()`
 huỷ mọi `SaveAsync` đang chờ.
 
+### Nên lưu thế nào
+
+Mỗi lần lưu ghi lại **toàn bộ** file, không chỉ key vừa đổi. Vì vậy chi phí phụ thuộc
+vào số lần lưu và tổng dung lượng save, không phụ thuộc số lần gọi `Set`.
+
+**Chọn hàm theo tình huống:**
+
+| Tình huống | Gọi | Vì sao |
+|---|---|---|
+| Qua màn, nhận thưởng, đổi trang bị, mở khoá | `SaveAsync()` | main thread chỉ tốn phần serialize, không khựng frame |
+| Mua IAP xong, trước khi gửi dữ liệu lên server, trước thao tác không làm lại được | `Save()` | hàm trả về là dữ liệu đã nằm trên đĩa |
+| Người chơi bấm Home, tắt app, chuyển app | không cần gọi | auto-save gọi `Save()` ở pause, mất focus và quit |
+| Đổi giá trị liên tục (vị trí, thời gian chơi, máu) | chỉ `Set`, để `AutoSaveInterval` lưu | không lưu theo frame |
+| Game chạy lâu không có mốc rõ ràng (idle, sandbox) | `AutoSaveInterval = 30` đến `60` | lưới an toàn bằng `SaveAsync`, giới hạn dữ liệu mất khi crash |
+
+**Để lưu nhanh hơn:**
+
+- Gọi nhiều `Set` rồi lưu **một lần**. Mười lần `Set` rồi một `SaveAsync()` rẻ hơn
+  nhiều so với mười lần lưu.
+- Không gọi `Save()` trong `Update`, `OnDestroy` của nhiều object hay trong vòng lặp.
+  Không có thay đổi thì `Save()` và `SaveAsync()` tự bỏ qua, nhưng `force: true` thì
+  luôn ghi.
+- Giữ file save nhỏ: không lưu dữ liệu tính lại được (config, cache, dữ liệu từ server).
+  Class lưu nhiều lần hoặc có nhiều phần tử thì implement `IFastSaveSerializable`.
+- `Obfuscate` (mặc định) đủ nhanh cho mọi lần lưu. `Aes` chậm hơn, chỉ dùng khi thật cần.
+- Không gọi `WaitForPendingWrites()` trên main thread trong lúc chơi. Hàm này chặn tới
+  khi ghi xong, mất hết lợi ích của `SaveAsync()`.
+
+**Để đỡ mất dữ liệu:**
+
+- Sửa trực tiếp object lấy từ `Get<T>` (list, dictionary, class) thì phải gọi
+  `MarkDirty()` hoặc `Set` lại. Auto-save lúc pause và quit vẫn ghi, nhưng
+  `AutoSaveInterval` và `SaveAsync()` không ép ghi sẽ **bỏ qua** vì không thấy thay đổi.
+  ```csharp
+  var inventory = FastSaveData.GetList<string>("inventory");
+  inventory.Add("sword");
+  FastSaveData.MarkDirty();
+  FastSaveData.SaveAsync();
+  ```
+- Lưu ngay sau mốc quan trọng, không đợi tới lúc thoát. Trên mobile hệ điều hành có thể
+  kill app mà không gọi `OnApplicationQuit`.
+- Cả hai hàm không ném exception khi ghi lỗi (đầy bộ nhớ, không có quyền ghi): lỗi được
+  log và dữ liệu được đánh dấu chưa lưu để lần sau ghi lại. Với thao tác quan trọng, kiểm
+  tra ngay sau `Save()`:
+  ```csharp
+  FastSaveData.SetInt("gem", gem + purchased);
+  FastSaveData.Save();
+  if (FastSaveData.IsDirty) ShowSaveError();
+  ```
+  Với `SaveAsync()`, `OnAfterSave` chỉ bắn khi ghi thành công.
+- Gọi `Save()` và `SaveAsync()` xen kẽ, nhiều lần liên tiếp đều an toàn: trên đĩa luôn
+  là bản mới nhất.
+- Kiểm tra `LoadStatus` trong `OnAfterLoad` để biết khi nào save bị hỏng (xem mục File hỏng).
+- Không tắt `AutoSave` nếu game không tự lưu ở pause và quit.
+
 ## File hỏng
 
 `FastSaveData.LoadStatus` cho biết lần đọc file gần nhất ra sao. Kiểm tra trong
