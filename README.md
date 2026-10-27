@@ -238,7 +238,7 @@ Dữ liệu thật sự quan trọng (tiền tệ trả phí, xếp hạng) vẫ
 - **Inspector** — xem key, kiểu, giá trị, dung lượng; xoá từng key.
 - **Open Example Scene** — mở scene test (chỉ có sau khi import sample).
 - **Open Save Folder** — mở thư mục `persistentDataPath`.
-- **Clear Data** — xoá toàn bộ save.
+- **Clear Data** — xoá toàn bộ save. Cũng có ở `MyTool > Clear Data`, phím tắt **Ctrl+Shift+Q** (macOS: **Cmd+Shift+Q**).
 - **Create Settings** — tạo `FastSaveSettings` với secret ngẫu nhiên, hoặc chọn asset đã có.
 
 ## Example

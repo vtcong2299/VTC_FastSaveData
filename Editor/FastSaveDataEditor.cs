@@ -22,6 +22,7 @@ namespace Vtcong.Core
         }
 
         [MenuItem("Window/Fast Save Data/Clear Data", false, 21)]
+        [MenuItem("MyTool/Clear Data %#q")]
         private static void ClearData()
         {
             if (!EditorUtility.DisplayDialog("Clear FastSaveData",

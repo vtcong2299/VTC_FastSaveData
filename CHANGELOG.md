@@ -4,6 +4,12 @@ Tất cả thay đổi đáng chú ý của VTC Fast Save được ghi ở đây
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/),
 đánh số theo [Semantic Versioning](https://semver.org/lang/vi/).
 
+## [1.2.2] - 2026-10-27
+
+### Added
+- Menu `MyTool > Clear Data` với phím tắt Ctrl+Shift+Q (macOS: Cmd+Shift+Q), cùng chức năng
+  `Window > Fast Save Data > Clear Data`.
+
 ## [1.2.1] - 2026-10-26
 
 ### Fixed
